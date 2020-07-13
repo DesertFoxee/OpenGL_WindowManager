@@ -1,6 +1,5 @@
-﻿  Camera.cpp
+﻿  dbstruct.cpp
   main.cpp
-  Utils.cpp
   Window.cpp
   Generating Code...
   WindowManager.vcxproj -> C:\Users\int.thuong.nv\Desktop\DesertFox\WindowManager\Debug\WindowManager.exe
