@@ -1,5 +1,5 @@
-﻿  dbstruct.cpp
-  main.cpp
-  Window.cpp
+﻿  Window.cpp
+  dbstruct.cpp
   Generating Code...
+  LINK : C:\Users\int.thuong.nv\Desktop\DesertFox\WindowManager\Debug\WindowManager.exe not found or not built by the last incremental link; performing full link
   WindowManager.vcxproj -> C:\Users\int.thuong.nv\Desktop\DesertFox\WindowManager\Debug\WindowManager.exe
