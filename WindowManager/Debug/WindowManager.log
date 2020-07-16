@@ -1,5 +1,10 @@
-﻿  Window.cpp
+﻿  Camera.cpp
   dbstruct.cpp
+  main.cpp
+  Utils.cpp
+  Window.cpp
+F:\OpenGL\WindowManager\WindowManager\Window.h(20,1): warning C4005: 'ASSERT': macro redefinition
+F:\OpenGL\WindowManager\WindowManager\Window.h(17): message : see previous definition of 'ASSERT'
   Generating Code...
-  LINK : C:\Users\int.thuong.nv\Desktop\DesertFox\WindowManager\Debug\WindowManager.exe not found or not built by the last incremental link; performing full link
-  WindowManager.vcxproj -> C:\Users\int.thuong.nv\Desktop\DesertFox\WindowManager\Debug\WindowManager.exe
+  LINK : F:\OpenGL\WindowManager\Debug\WindowManager.exe not found or not built by the last incremental link; performing full link
+  WindowManager.vcxproj -> F:\OpenGL\WindowManager\Debug\WindowManager.exe

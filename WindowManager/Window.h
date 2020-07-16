@@ -84,7 +84,6 @@ public:
     friend class XWindowManager;
 };
 
-
 class XWindowManager
 {
 
@@ -121,7 +120,6 @@ private:
         m_vWindows.clear();
         m_wCurrent = NULL;
     }
-
     void destroyWindowManager()
     {
         for (Window* win : m_vWindows)
