@@ -144,12 +144,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="dbstruct.cpp" />
+    <ClCompile Include="conf_load.cpp" />
+    <ClCompile Include="db_struct.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\.gitignore" />
     <None Include="Frag.glsl" />
     <None Include="glew32.dll" />
     <None Include="glfw3.dll" />
@@ -157,7 +159,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="dbstruct.h" />
+    <ClInclude Include="conf_load.h" />
+    <ClInclude Include="db_struct.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>

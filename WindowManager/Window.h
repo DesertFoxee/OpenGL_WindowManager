@@ -11,13 +11,7 @@
 #include <vector>
 #include <list>
 
-#ifdef DEBUG
-#       define ASSERT assert
-#else 
-#       define ASSERT 
-#endif // DEBUG
-
-#define ASSERT assert
+#include "conf_load.h"
 
 
 using namespace std;
@@ -25,308 +19,333 @@ using namespace std;
 
 struct WindowSetting
 {
-    const char* strTitle;
-    unsigned int uiScreenW;
-    unsigned int uiScreenH;
-    int iAntialiasing;
+	const char* m_strTitle;
+	unsigned int m_uiScreenW;
+	unsigned int m_uiScreenH;
+	int m_iAntialiasing;
 
-    WindowSetting()
-    {
-        strTitle = "OpenGL";
-        strTitle = "OpenGL";
-        uiScreenW = 800;
-        uiScreenH = 600;
-        iAntialiasing = -1;
-    }
+	WindowSetting()
+	{
+		m_strTitle = "OpenGL";
+		m_uiScreenW = 800;
+		m_uiScreenH = 600;
+		m_iAntialiasing = -1;
+	}
 };
-//
 
-// This is comment 
+
 class Window
 {
 
 private:
-    int m_id;
-    GLFWwindow* m_window;
-    WindowSetting m_wsSetting;
-    std::list<size_t> m_listChildren;
+	int m_id;
+	int m_iMultiSamp;
+
+	GLFWwindow* m_window;
+	WindowSetting m_tSetting;
+	std::list<size_t> m_listChildren;
 
 public:
-    Window(GLFWwindow* win, int id, const char* title, unsigned int width, unsigned int height)
-    {
-        this->m_window = win;
-        this->m_id = id;
-        this->m_wsSetting.strTitle = title;
-        this->m_wsSetting.uiScreenW = width;
-        this->m_wsSetting.uiScreenH = height;
-        this->m_listChildren.clear();
-    }
+	Window()
+	{
+		this->m_window = NULL;
+		this->m_id = -100;
+		this->m_iMultiSamp = -1;
+		this->m_tSetting.m_strTitle = "";
+		this->m_tSetting.m_uiScreenW = 100;
+		this->m_tSetting.m_uiScreenH = 100;
+		this->m_listChildren.clear();
+	}
+	Window(GLFWwindow* win, int id, const char* title, unsigned int width, unsigned int height, int iMulti = -1)
+	{
+		this->m_window = win;
+		this->m_id = id;
+		this->m_iMultiSamp = iMulti;
+		this->m_tSetting.m_strTitle = title;
+		this->m_tSetting.m_uiScreenW = width;
+		this->m_tSetting.m_uiScreenH = height;
+		this->m_listChildren.clear();
+	}
 
-    Window(GLFWwindow* win, int id, WindowSetting setting)
-    {
-        this->m_window = win;
-        this->m_wsSetting = setting;
-        this->m_id = id;
-        this->m_listChildren.clear();
-    }
+	Window(GLFWwindow* win, int id, WindowSetting setting)
+	{
+		this->m_window = win;
+		this->m_id = id;
+		this->m_iMultiSamp = (setting.m_iAntialiasing > 0) ? setting.m_iAntialiasing : -1;
+		this->m_tSetting = setting;
+		this->m_listChildren.clear();
+	}
+	void Close()
+	{
+		glfwSetWindowShouldClose(m_window, true);
+		glfwDestroyWindow(m_window);
+	}
+	bool AddChildren(Window* window)
+	{
+		if (window->m_id == this->m_id) return true;
+		auto isIDExist = std::find(m_listChildren.begin(), m_listChildren.end(), window->m_id);
+		if (isIDExist != m_listChildren.end())
+		{
+			m_listChildren.push_back(window->m_id);
+			return true;
+		}
+		return false;
+	}
 
-    bool AddChildren(Window* window)
-    {
-        auto isIDExist = std::find(m_listChildren.begin(), m_listChildren.end(), window->m_id);
-        if (isIDExist != m_listChildren.end())
-        {
-            m_listChildren.push_back(window->m_id);
-            return true;
-        }
-        return false;
-    }
 
-    friend class XWindowManager;
+	friend class XWindowManager;
 };
 
 class XWindowManager
 {
 
 private:
-    std::vector<Window*> m_vWindows;
-    Window* m_wCurrent;
-    std::list<int> m_ltRetainsID;
+	int m_iMaxWindow;
+	std::vector<Window*> m_vWindows;
+	Window* m_wCurrent;
+	std::list<int> m_ltRetainsID;
 
 private:
-    XWindowManager()
-    {
-        cout << "[Init XWindwoManager]" << endl;
-        initWindowManager();
-    }
+	XWindowManager()
+	{
+		cout << "[Init XWindwoManager]" << endl;
+		initWindowManager();
+	}
+	void resetProperty()
+	{
+		m_iMaxWindow = 0;
+		m_vWindows.clear();
+		m_wCurrent = NULL;
+		m_ltRetainsID.clear();
+	}
 
-    void initWindowManager()
-    {
-        int iInitR = glfwInit();
-        ASSERT(iInitR != GLFW_FALSE);
-        if (iInitR == GLFW_FALSE)
-        {
-            cout << "Error [Window.cpp]: Load glfwInit() failed !" << endl;
-            glfwTerminate();
-            exit(EXIT_FAILURE);
-        }
-        if (glewInit() != GLEW_OK)
-        {
-            cout << "Error [Window.cpp]: Load glewInit() failed !" << endl;
-        }
-        if (!m_vWindows.empty())
-        {
-            destroyWindowManager();
-        }
-        m_vWindows.clear();
-        m_wCurrent = NULL;
-    }
-    void destroyWindowManager()
-    {
-        for (Window* win : m_vWindows)
-        {
-            glfwSetWindowShouldClose(win->m_window, true);
-            glfwDestroyWindow(win->m_window);
-            delete win;
-        }
-        glfwTerminate();
-        m_vWindows.clear();
-        m_wCurrent = NULL;
-        m_ltRetainsID.clear();
-    }
+	void initWindowManager()
+	{
+		if (!m_vWindows.empty())
+		{
+			destroyWindowManager();
+		}
+		this->resetProperty();
+	}
+	void destroyWindowManager()
+	{
+		for (Window* win : m_vWindows)
+		{
+			glfwSetWindowShouldClose(win->m_window, true);
+			glfwDestroyWindow(win->m_window);
+			delete win;
+		}
+		resetProperty();
+	}
 
 public:
-    ~XWindowManager()
-    {
-        cout << "[Destroy XWindwoManager]" << endl;
-        destroyWindowManager();
-    }
-    void setActive(int iIDWindow)
-    {
-        for (Window* window : m_vWindows)
-        {
-            if (window->m_id = iIDWindow)
-            {
-                m_wCurrent = window;
-                glfwMakeContextCurrent(window->m_window);
-                break;
-            }
-        }
-    }
-    void setActive(Window* ptrActiveWindow)
-    {
-        for (Window* window : m_vWindows)
-        {
-            if (window == ptrActiveWindow)
-            {
-                m_wCurrent = window;
-                glfwMakeContextCurrent(window->m_window);
-                break;
-            }
-        }
-    }
+	~XWindowManager()
+	{
+		cout << "[Destroy XWindwoManager]" << endl;
+		destroyWindowManager();
+	}
+	void setActive(int iIDWindow)
+	{
+		for (Window* window : m_vWindows)
+		{
+			if (window->m_id = iIDWindow)
+			{
+				m_wCurrent = window;
+				glfwMakeContextCurrent(window->m_window);
+				break;
+			}
+		}
+	}
+	void setActive(Window* ptrActiveWindow)
+	{
+		for (Window* window : m_vWindows)
+		{
+			if (window == ptrActiveWindow)
+			{
+				m_wCurrent = window;
+				glfwMakeContextCurrent(window->m_window);
+				break;
+			}
+		}
+	}
 
-    void createWindow(WindowSetting setting)
-    {
-        GLFWwindow* glfwWin = glfwCreateWindow(setting.uiScreenW, setting.uiScreenH, setting.strTitle, NULL, NULL);
+	//============================================================
+	// Add new window to windows manager using setting
+	//============================================================
+	Window* AddWindow(WindowSetting setting)
+	{
+		Window* newWin = NULL;
+		GLFWwindow* glfwWin = glfwCreateWindow(setting.m_uiScreenW, setting.m_uiScreenH, setting.m_strTitle, NULL, NULL);
+		ASSERT(glfwWin != NULL);
+		if (glfwWin != NULL)
+		{
+			if (m_ltRetainsID.empty())
+			{
+				newWin = new Window(glfwWin, m_iMaxWindow, setting);
+				m_iMaxWindow++;
+			}
+			else
+			{
+				newWin = new Window(glfwWin, m_ltRetainsID.front(), setting);
+				m_ltRetainsID.pop_front();
+			}
+			if (newWin != NULL)
+			{
+				m_vWindows.push_back(newWin);
+			}
+		}
+		else
+		{
+			// Output Log 
+			cout << "Error [Window.cpp]: Create glfwCreateWindow() failed! " << endl;
+		}
+		return newWin;
+	}
+	//============================================================
+	// Add new window to windows manager using Basic paramater
+	//============================================================
+	Window* AddWindow(const char* title, unsigned int width, unsigned int height)
+	{
+		Window* newWin = NULL;
+		GLFWwindow* glfwWin = glfwCreateWindow(width, height, title, NULL, NULL);
+		ASSERT(glfwWin != NULL);
+		if (glfwWin != NULL)
+		{
+			WindowSetting setting;
+			setting.m_strTitle = title;
+			setting.m_uiScreenW = width;
+			setting.m_uiScreenH = height;
 
-        if (glfwWin != NULL)
-        {
-            Window* win = new Window(glfwWin, m_vWindows.size(), setting);
+			if (m_ltRetainsID.empty())
+			{
+				newWin = new Window(glfwWin, m_iMaxWindow, setting);
+				m_iMaxWindow++;
+			}
+			else
+			{
+				newWin = new Window(glfwWin, m_ltRetainsID.front(), setting);
+				m_ltRetainsID.pop_front();
+			}
+			if (newWin != NULL)
+			{
+				m_vWindows.push_back(newWin);
+			}
+		}
+		else
+		{
+			//Output log 
+			cout << "Error [Window.cpp]: Create glfwCreateWindow() failed! " << endl;
+		}
+		return newWin;
+	}
 
-            m_vWindows.push_back(win);
-        }
-        else
-        {
-            // Output Log 
-            cout << "Error [Window.cpp]: Create glfwCreateWindow() failed! " << endl;
-        }
-    }
+	//============================================================
+	// Remove the specified window using ID
+	//============================================================
+	void RemoveWindow(int iWindowID)
+	{
+		for (auto itWin = m_vWindows.begin(); itWin != m_vWindows.end(); )
+		{
+			Window* winRemove = *itWin;
+			if (winRemove->m_id == iWindowID)
+			{
+				if (winRemove == m_wCurrent) m_wCurrent = NULL;
+				if (winRemove != NULL && winRemove->m_window != NULL)
+				{
+					this->RemoveAllChildren((*itWin));
+					winRemove->Close();
+					m_ltRetainsID.push_back((*itWin)->m_id);
+					m_vWindows.erase(itWin);
+				}
+				if (winRemove != NULL)
+				{
+					delete winRemove;
+				}
+				break;
+			}
+			else  itWin++;
+		}
+	}
 
-    void createWindow(const char* title, unsigned int width, unsigned int height, WindowSetting setting)
-    {
-        GLFWwindow* glfwWin = glfwCreateWindow(width, height, title, NULL, NULL);
+	//============================================================
+	// Remove the specified window using pointer window
+	//============================================================
+	void RemoveWindow(Window* ptrWindow)
+	{
+		for (auto itWin = m_vWindows.begin(); itWin != m_vWindows.end(); )
+		{
+			if (*itWin == ptrWindow)
+			{
+				if (ptrWindow == m_wCurrent) m_wCurrent = NULL;
+				if (ptrWindow != NULL && ptrWindow->m_window != NULL)
+				{
+					this->RemoveAllChildren((*itWin));
+					ptrWindow->Close();
+					m_ltRetainsID.push_back((*itWin)->m_id);
+					m_vWindows.erase(itWin);
+				}
+				if (*itWin != NULL)
+				{
+					delete (*itWin);
+				}
+				break;
+			}
+			else  itWin++;
+		}
+	}
+	//============================================================
+	// Remove the entire window as a child of the window 
+	//============================================================
+	bool RemoveAllChildren(Window* ptrWindow)
+	{
+		auto itChildren = ptrWindow->m_listChildren.begin();
+		while (itChildren != ptrWindow->m_listChildren.end())
+		{
+			auto itWindow = m_vWindows.begin();
+			while (itWindow != m_vWindows.end())
+			{
 
-        if (glfwWin != NULL)
-        {
+				if ((*itWindow)->m_id == *itChildren)
+				{
+					RemoveAllChildren(*itWindow);
+					itWindow = m_vWindows.erase(itWindow);
+				}
+				else ++itWindow;
+			}
+			++itChildren;
+		}
+	}
 
-            setting.strTitle = title;
-            setting.uiScreenW = width;
-            setting.uiScreenH = height;
-
-            Window* win = new Window(glfwWin, m_vWindows.size(), setting);
-
-            m_vWindows.push_back(win);
-        }
-        else
-        {
-            //Output log 
-            cout << "Error [Window.cpp]: Create glfwCreateWindow() failed! " << endl;
-        }
-
-    }
-    void RemoveWindow(int iWindowID)
-    {
-        for (auto itWin = m_vWindows.begin(); itWin != m_vWindows.end(); )
-        {
-            if ((*itWin)->m_id == iWindowID)
-            {
-                if (*itWin == m_wCurrent) m_wCurrent = NULL;
-
-                if ((*itWin) != NULL && (*itWin)->m_window != NULL)
-                {
-                    glfwSetWindowShouldClose((*itWin)->m_window, true);
-                    glfwDestroyWindow((*itWin)->m_window);
-                    m_ltRetainsID.push_back((*itWin)->m_id);
-                    m_vWindows.erase(itWin);
-                }
-                if (*itWin != NULL)
-                {
-                    delete (*itWin);
-                }
-            }
-            else  itWin++;
-        }
-    }
-
-    void RemoveWindow(Window* ptrWindow)
-    {
-        for (auto itWin = m_vWindows.begin(); itWin != m_vWindows.end(); )
-        {
-            if (*itWin == ptrWindow)
-            {
-                if (*itWin == m_wCurrent) m_wCurrent = NULL;
-                if ((*itWin) != NULL && (*itWin)->m_window != NULL)
-                {
-                    glfwSetWindowShouldClose((*itWin)->m_window, true);
-                    glfwDestroyWindow((*itWin)->m_window);
-                    m_ltRetainsID.push_back((*itWin)->m_id);
-                    m_vWindows.erase(itWin);
-                }
-                if (*itWin != NULL)
-                {
-                    delete (*itWin);
-                }
-            }
-            else  itWin++;
-        }
-    }
-    bool RemoveAllChildren(Window* ptrWindow)
-    {
-        auto itChildren = ptrWindow->m_listChildren.begin();
-        while (itChildren != ptrWindow->m_listChildren.end())
-        {
-            for (auto itWindow = m_vWindows.begin(); itWindow != m_vWindows.end(); )
-            {
-                if ((*itWindow)->m_id == *itChildren)
-                {
-                    itWindow = m_vWindows.erase(itWindow);
-                }
-                else ++itWindow;
-            }
-            m_vWindows.erase(m_vWindows.begin());
-
-            itChildren++;
-        }
-        // Remove all window in array window manager
-        for (auto itWindow = m_vWindows.begin(); itWindow != m_vWindows.end(); )
-        {
-            if (*itWindow == ptrWindow)
-            {
-                itWindow = m_vWindows.erase(itWindow);
-            }
-            else ++itWindow;
-        }
-
-    }
-    void removeWindow(int iIDWindow)
-    {
-        for (Window* window : m_vWindows)
-        {
-            if (window->m_id == iIDWindow)
-            {
-                if (window == m_wCurrent)
-                {
-                    m_wCurrent = NULL;
-                }
-                if (window != NULL && window->m_window != NULL)
-                {
-                    glfwSetWindowShouldClose(window->m_window, true);
-                    glfwDestroyWindow(window->m_window);
-                }
-                delete window;
-            }
-        }
-    }
-    friend class WindowManager;
+	friend class WindowManager;
 };
 
 
 class WindowManager
 {
 private:
-    static XWindowManager* m_winManager;
+	static XWindowManager* m_winManager;
 
 
 public:
-    WindowManager()
-    {
-        cout << "[Init WindowManager]" << endl;
-        if (m_winManager == NULL)
-        {
-            m_winManager = new XWindowManager();
-        }
-    }
+	WindowManager()
+	{
+		cout << "[Init WindowManager]" << endl;
+		if (m_winManager == NULL)
+		{
+			m_winManager = new XWindowManager();
+		}
+	}
 
-    XWindowManager* getWindows()
-    {
-        return m_winManager;
-    }
+	XWindowManager* getWindows()
+	{
+		return m_winManager;
+	}
 
-    ~WindowManager()
-    {
-        cout << "[Destroy WindowManager]" << endl;
-        delete m_winManager;
-    }
+	~WindowManager()
+	{
+		cout << "[Destroy WindowManager]" << endl;
+		delete m_winManager;
+	}
 
 };
 
