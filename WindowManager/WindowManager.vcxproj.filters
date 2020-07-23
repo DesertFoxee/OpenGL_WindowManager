@@ -47,7 +47,10 @@
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="dbstruct.cpp">
+    <ClCompile Include="conf_load.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="db_struct.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -61,7 +64,10 @@
     <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="dbstruct.h">
+    <ClInclude Include="conf_load.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="db_struct.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
