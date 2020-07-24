@@ -20,6 +20,19 @@
 using namespace std;
 
 
+void KeyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    
+};
+
+
+void MouseFunc(GLFWwindow* window, int button, int action , int mods) {
+
+    
+}
+
+
+
+
 struct WindowSetting
 {
     const char* m_strTitle;
@@ -51,38 +64,24 @@ struct WindowSetting
 };
 //
 
-class BaseWindow
-
-{
-
-public:
-    virtual void KeyBoardFunc(int key, int scancode, int action, int mods) = 0;
-    virtual void MouseFunc(double xpos, double ypos) = 0;
-
-};
 // This is comment 
 class Window
 {
 
 private:
-    int m_id;
-    GLFWwindow* m_window;
+    int                     m_id;
+    bool                    m_bClosed;
+    GLFWwindow*             m_window;
     WindowSetting           m_wsSetting;
     std::list<size_t>       m_listChildren;
-
-public:
-    static void KeyBoardFunc(GLFWwindow* window, int key, int scancode, int action, int mods ){
     
-    }
-    void MouseFunc(double xpos, double ypos){
-    
-    }
 
 public:
     Window(GLFWwindow* win, int id, const char* title, unsigned int width, unsigned int height)
     {
         this->m_window = win;
         this->m_id = id;
+        this->m_bClosed = false;
         this->m_wsSetting.m_strTitle = title;
         this->m_wsSetting.m_uiScreenW = width;
         this->m_wsSetting.m_uiScreenH = height;
@@ -94,6 +93,7 @@ public:
         this->m_window = win;
         this->m_wsSetting = setting;
         this->m_id = id;
+        this->m_bClosed = false;
         this->m_listChildren.clear();
     }
 
@@ -132,7 +132,7 @@ public:
     friend class XWindowManager;
 };
 
-void function_name(GLFWwindow* window, int key, int scancode, int action, int mods){};
+
 
 class XWindowManager
 {
@@ -190,7 +190,8 @@ private:
 
     void SetFunctionActive(Window* window)
     {
-        glfwSetKeyCallback(window->m_window, window->KeyBoardFunc);
+        glfwSetKeyCallback(window->m_window, KeyboardFunc);
+        glfwSetMouseButtonCallback(window->m_window , MouseFunc);
     }
 public:
     ~XWindowManager()
@@ -238,7 +239,7 @@ public:
         Window* window = this->SetContextCurrent(iWindowID);
         if (window != NULL)
         {
-
+            SetFunctionActive(window);
         }
     }
 
@@ -352,6 +353,11 @@ public:
             }
             else  itWindow++;
         }
+    }
+
+
+    void UpdateDraw() {
+        
     }
     friend class WindowManager;
 };
