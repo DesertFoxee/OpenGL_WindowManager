@@ -1,5 +1,6 @@
 #include "conf_load.h"
 
 
-bool conf_load::bLoadGLFW = false;
-bool conf_load::bLoadGLEW = false;
+bool ConfLoad::m_bGLFWStatus = true;
+bool ConfLoad::m_bGLEWStatus = true;
+

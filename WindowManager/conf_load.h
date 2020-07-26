@@ -3,58 +3,62 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-
 #include <iostream>
 
 //=========================
 // Define
 //=========================
+
 #ifdef DEBUG
 #       define ASSERT assert
 #else 
 #       define ASSERT 
 #endif // DEBUG
 
-
+//=========================
+// Define
+//=========================
 
 
 using namespace std;
 
 
-class conf_load
+class ConfLoad
 {
-public :
 
-    static bool bLoadGLFW;
-    static bool bLoadGLEW;
+public:
+    static bool m_bGLFWStatus;
+    static bool m_bGLEWStatus;
 
-	static void loadLibrary(){
+    static void LoadLibrary()
+    {
         int iInitGLFW = glfwInit(); int iInitGLEW = glewInit();
+        m_bGLFWStatus = true;
+        m_bGLEWStatus = true;
+
         ASSERT(iInitGLFW != GLFW_FALSE);
-        ASSERT(iInitGLEW == GLEW_OK);
-        if (iInitGLFW == GLFW_FALSE){
-            cout << "Error [conf_load.cpp]: Load glfwInit() failed !" << endl;
+
+        if (iInitGLFW == GLFW_FALSE)
+        {
+            m_bGLFWStatus = false;
+            cout << "Error [Window.cpp]: Load glfwInit() failed !" << endl;
             glfwTerminate();
             exit(EXIT_FAILURE);
         }
-        else{
-            bLoadGLFW = true;
+        ASSERT(iInitGLEW == GLEW_OK);
+        if (iInitGLEW != GLEW_OK)
+        {
+            m_bGLEWStatus = false;
+            cout << "Error [Window.cpp]: Load glewInit() failed !" << endl;
         }
-        if (iInitGLEW != GLEW_OK){
-            ASSERT(0);
-            cout << "Error [conf_load.cpp]: Load glewInit() failed !" << endl;
-        }
-        else  bLoadGLEW = true;
-       
-	}
-    static void releaseLibrary(){
+
+    }
+
+    static void UnLoadLibrary()
+    {
         glfwTerminate();
     }
 
 };
 
-
-
 #endif // !CONF_LOAD
-
-
