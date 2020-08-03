@@ -87,12 +87,26 @@ void show()
     cout << endl;
 }
 
+
+vector<int* > vec;
+
+void showVec()
+{
+    cout << "==== Show : " << endl;
+    for (auto i : vec)
+    {
+        _ASSERT(i != NULL);
+        cout << " -> " << i  ;
+    }
+    cout << endl;
+}
+
 using namespace std;
 
 int main(void)
 {
 
-    const int max_e = 9;
+  /*  const int max_e = 9;
     Window1 w[max_e];
     for (int i = 0; i < max_e; i++)
     {
@@ -116,7 +130,11 @@ int main(void)
     cout << "====================" << endl;
     RemoveWindow(&m_vWindows.at(1));
     cout << "====================" << endl;
-    show();
+    show();*/
+
+    
+
+
     getchar();
     exit(EXIT_SUCCESS);
 }

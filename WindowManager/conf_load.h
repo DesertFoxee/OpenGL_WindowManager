@@ -10,7 +10,7 @@
 //=========================
 
 #ifdef DEBUG
-#       define ASSERT assert
+#       define ASSERT(f) _ASSERT(f)
 #else 
 #       define ASSERT 
 #endif // DEBUG
