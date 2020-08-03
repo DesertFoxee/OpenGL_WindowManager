@@ -165,18 +165,16 @@ private:
         {
             destroyWindowManager();
         }
-        this->ResetProperty();
+        else this->ResetProperty();
     }
     void destroyWindowManager()
     {
         auto itWindow = m_vWindows.begin();
-
         while (itWindow != m_vWindows.end())
         {
-            ptrWindow = (*itWindow); 
-            glfwSetWindowShouldClose(ptrWindow->m_window, true);
-            glfwDestroyWindow(ptrWindow->m_window);
-            delete ptrWindow;
+            glfwSetWindowShouldClose((*itWindow)->m_window, true);
+            glfwDestroyWindow((*itWindow)->m_window);
+            delete (*itWindow);
             (*itWindow) = NULL;
         }
         this->ResetProperty();
@@ -210,18 +208,18 @@ public:
     Window* SetContextCurrent(int iWindowID)
     {
         auto itWindow = m_vWindows.begin();
-        Window* winTemp = NULL;
+        Window* ptrWindow = NULL;
         while (itWindow != m_vWindows.end())
         {
-            winTemp = *itWindow;
-            if (winTemp->m_id == iWindowID)
+            ptrWindow = *itWindow;
+            if (ptrWindow->m_id == iWindowID)
             {
-                m_wCurrent = winTemp;
+                m_wCurrent = ptrWindow;
                 if (m_wCurrent != NULL)
                 {
                     glfwMakeContextCurrent(m_wCurrent->m_window);
                 }
-                return winTemp;
+                return ptrWindow;
             }
         }
         return NULL;
@@ -229,18 +227,18 @@ public:
     Window* SetContextCurrent(Window* ptrActiveWindow)
     {
         auto itWindow = m_vWindows.begin();
-        Window* ptrWin = NULL;
+        Window* ptrWindow = NULL;
         while (itWindow != m_vWindows.end())
         {
-            ptrWin = *itWindow;
-            if (ptrWin == ptrActiveWindow)
+            ptrWindow = *itWindow;
+            if (ptrWindow == ptrActiveWindow)
             {
-                m_wCurrent = ptrWin;
+                m_wCurrent = ptrWindow;
                 if (m_wCurrent != NULL)
                 {
                     glfwMakeContextCurrent(m_wCurrent->m_window);
                 }
-                return ptrWin;
+                return ptrWindow;
             }
         }
         return NULL;
