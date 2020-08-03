@@ -25,7 +25,6 @@ public:
 
 std::vector<Window1> m_vWindows;
 
-
 bool RemoveAllChildren(Window1* ptrWindow)
 {
     auto itChildID = ptrWindow->m_listChildren.begin();
@@ -34,7 +33,7 @@ bool RemoveAllChildren(Window1* ptrWindow)
         for (auto itWindow = m_vWindows.begin(); itWindow != m_vWindows.end(); )
         {
             Window1* winChild = &(*itWindow);
-            if (winChild->m_iLay >= ptrWindow->m_iLay && winChild->m_id == *itChildID 
+            if (winChild->m_iLay >= ptrWindow->m_iLay && winChild->m_id == *itChildID
                 && winChild->m_id != ptrWindow->m_id)
             {
                 RemoveAllChildren(winChild);
@@ -47,6 +46,30 @@ bool RemoveAllChildren(Window1* ptrWindow)
     }
     return true;
 }
+
+
+//============================================================
+   // Remove the specified window using ID
+   //============================================================
+void RemoveWindow(Window1* ptrWindow)
+{
+    for (auto itWindow = m_vWindows.begin(); itWindow != m_vWindows.end();)
+    {
+        Window1* ptrWin = &(*itWindow);
+        if (ptrWin == NULL)
+        {
+            itWindow = m_vWindows.erase(itWindow);
+            continue;
+        }
+        else if (ptrWin == ptrWindow)
+        {
+            RemoveAllChildren(ptrWin);
+            itWindow = m_vWindows.erase(itWindow);
+        }
+        else  ++itWindow;
+    }
+}
+
 
 void show()
 {
@@ -91,7 +114,7 @@ int main(void)
     }
     show();
     cout << "====================" << endl;
-    RemoveAllChildren(&m_vWindows.at(1));
+    RemoveWindow(&m_vWindows.at(1));
     cout << "====================" << endl;
     show();
     getchar();
