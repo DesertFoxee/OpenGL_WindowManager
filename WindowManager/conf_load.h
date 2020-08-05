@@ -5,6 +5,8 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
+#define DEBUG
+
 //=========================
 // Define
 //=========================
@@ -30,28 +32,28 @@ public:
     static bool m_bGLFWStatus;
     static bool m_bGLEWStatus;
 
-    static void LoadLibrary()
+    static void LoadGLFWLibrary()
     {
-        int iInitGLFW = glfwInit(); int iInitGLEW = glewInit();
-        m_bGLFWStatus = true;
-        m_bGLEWStatus = true;
-
+        int iInitGLFW = glfwInit();
         ASSERT(iInitGLFW != GLFW_FALSE);
-
         if (iInitGLFW == GLFW_FALSE)
         {
             m_bGLFWStatus = false;
-            cout << "Error [Window.cpp]: Load glfwInit() failed !" << endl;
+            cout << "Error [conf_load.cpp]: Load glfwInit() failed !" << endl;
             glfwTerminate();
             exit(EXIT_FAILURE);
         }
+    }
+
+    static void LoadGLEWLibrary()
+    {
+        int iInitGLEW = glewInit();
         ASSERT(iInitGLEW == GLEW_OK);
         if (iInitGLEW != GLEW_OK)
         {
             m_bGLEWStatus = false;
-            cout << "Error [Window.cpp]: Load glewInit() failed !" << endl;
+            cout << "Error [conf_load.cpp]: Load glewInit() failed !" << endl;
         }
-
     }
 
     static void UnLoadLibrary()
