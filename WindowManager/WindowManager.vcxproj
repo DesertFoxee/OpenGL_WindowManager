@@ -146,6 +146,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="conf_load.cpp" />
     <ClCompile Include="db_struct.cpp" />
+    <ClCompile Include="func_base.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -161,6 +162,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="conf_load.h" />
     <ClInclude Include="db_struct.h" />
+    <ClInclude Include="func_base.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>

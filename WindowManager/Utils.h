@@ -28,6 +28,8 @@ typedef	unsigned int Axis;
 using namespace std;
 
 
+
+
 class WindowSetting
 {
 public:

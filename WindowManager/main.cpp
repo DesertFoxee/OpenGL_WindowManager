@@ -7,7 +7,9 @@ void fun()
 {
     ConfLoad::LoadGLFWLibrary();
     WindowManager m_WinManger;
-    m_WinManger.CreateWindow("ROOT window", 200, 200);
+    Window *win = m_WinManger.CreateWindow("ROOT window", 200, 200 , 0);
+    m_WinManger.SetActiveWindow(win->GetID());
+    m_WinManger.SetIsRootWindow(win);
     ConfLoad::LoadGLEWLibrary();
     m_WinManger.UpdateDraw();
 
@@ -17,6 +19,6 @@ void fun()
 int main(void)
 {
     fun();
-    getchar();
+    //getchar();
     exit(EXIT_SUCCESS);
 }

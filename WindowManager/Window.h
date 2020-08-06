@@ -9,12 +9,16 @@
 #include <iostream>
 #include <vector>
 #include <list>
+#include <queue>
 #include "conf_load.h"
+#include "func_base.h"
 
 
 typedef GLFWwindow  WindowBase;
 
 #define WINDOW_MAX_SIZE 20
+#define Deleteptr(ptr) delete(ptr); ptr = NULL;
+#define deleteaptr
 
 using namespace std;
 
@@ -23,14 +27,20 @@ class WindowManager;
 
 
 
+
 void KeyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mods);
 void MouseFunc(GLFWwindow* window, int button, int action, int mods);
+
+
+void window_focus_callback(GLFWwindow* window, int focused);
+void cursor_enter_callback(GLFWwindow* window, int entered);
+
 
 
 struct WindowSetting
 {
 
-    const char* m_strTitle;
+    char* m_strTitle;
     unsigned int            m_uiScreenW;
     unsigned int            m_uiScreenH;
     int                     m_iAntiaLevel;
@@ -39,14 +49,14 @@ struct WindowSetting
 
     WindowSetting()
     {
-        m_strTitle = "OpenGL";
-        m_uiScreenW = 800;
-        m_uiScreenH = 600;
+        m_strTitle = _strdup("OpenGL");
+        m_uiScreenW = 200;
+        m_uiScreenH = 200;
         m_iAntiaLevel = -1;
         m_bShowCursor = true;
         m_bResizeable = false;
     }
-    WindowSetting(const char* title, unsigned int width, unsigned int height, int antiaLevel = -1,
+    WindowSetting(char* title, unsigned int width, unsigned int height, int antiaLevel = -1,
                   bool showCursor = true, bool resizeAble = true)
     {
         m_strTitle = title;
@@ -66,6 +76,7 @@ class Window
     bool                    m_bCreateSuccess;
     bool                    m_bClosed;
     int                     m_iParentID;
+    bool                    m_bHide;
     WindowBase* m_window;
     WindowSetting           m_wsSetting;
     std::list<size_t>       m_listChildren;
@@ -90,8 +101,9 @@ public:
         this->m_iParentID = -1;
         this->m_iLay = layer;
         this->m_bClosed = false;
+        this->m_bHide = false;
 
-        this->m_wsSetting.m_strTitle = title;
+        this->m_wsSetting.m_strTitle = _strdup(title);
         this->m_wsSetting.m_uiScreenW = width;
         this->m_wsSetting.m_uiScreenH = height;
         this->m_window = glfwCreateWindow(width, height, title, NULL, NULL);
@@ -105,6 +117,7 @@ public:
         this->m_iParentID = -1;
         this->m_iLay = layer;
         this->m_bClosed = false;
+        this->m_bHide = false;
 
         this->m_wsSetting = setting;
         this->m_window = glfwCreateWindow(setting.m_uiScreenW, setting.m_uiScreenH, setting.m_strTitle, NULL, NULL);;
@@ -126,14 +139,15 @@ public:
     {
         m_listChildren.remove(childrenID);
     }
-    void RemoveAllChidrenID()
+    void RemoveAllChidren()
     {
         m_listChildren.clear();
     }
 
     bool AddChildren(Window* window)
     {
-        if (window->m_iID == this->m_iID || this == window
+        ASSERT(window);
+        if (!window || window->m_iID == this->m_iID || this == window
             || this->m_window == window->m_window || window->m_iParentID >= 0) return true;
 
         if (m_listChildren.empty() || std::find(m_listChildren.begin(), m_listChildren.end(), window->m_iID) != m_listChildren.end())
@@ -172,7 +186,6 @@ public:
     {
         return &this->m_wsSetting;
     }
-
     int GetParentID()
     {
         return this->m_iParentID;
@@ -185,21 +198,37 @@ public:
     {
         this->m_iID = id;
     }
+    void Hide()
+    {
+        this->m_bHide = true;
+        glfwHideWindow(m_window);
+    }
+    void Show()
+    {
+        this->m_bHide = false;
+        glfwShowWindow(m_window);
+    }
+
+    void SetOpacity(float opacity)
+    {
+        glfwSetWindowOpacity(m_window, opacity);
+    }
 
     int IsClosed()
     {
         return  glfwWindowShouldClose(m_window);
     }
-    int Close()
+    void Close()
     {
         glfwSetWindowShouldClose(m_window, true);
-    }
-    void Distroy() 
-    {
         glfwDestroyWindow(m_window);
+        this->RemoveData();
     }
-
-    void SwapBuffers()
+    void Focus()
+    {
+        glfwFocusWindow(m_window);
+    }
+    void Draw()
     {
         glfwSwapBuffers(m_window);
     }
@@ -212,7 +241,10 @@ class XWindowManager
 {
     std::vector<Window* >   m_vWindows;
     Window* m_pWinContextCurrent;
+    Window* m_pWinRoot;
     Window* m_pWinActive;
+    Window* m_pNewWinCreated;
+
     std::list<int>          m_ltRetainsID;
     unsigned int            m_uiMaxWindow;
 
@@ -228,26 +260,28 @@ private:
         m_ltRetainsID.clear();
         m_pWinContextCurrent = NULL;
         m_pWinActive = NULL;
+        m_pNewWinCreated = NULL;
         m_uiMaxWindow = 0;
     }
     void initWindowManager()
     {
         if (!m_vWindows.empty())
         {
-            destroyWindowManager();
+            DestroyWindowManager();
         }
         else this->ResetProperty();
         m_vWindows.resize(WINDOW_MAX_SIZE);
     }
-    void destroyWindowManager()
+    void DestroyWindowManager()
     {
-        auto itWindow = m_vWindows.begin();
-        while (itWindow != m_vWindows.end() && *itWindow != NULL)
+        if (!m_vWindows.empty())
         {
-            glfwSetWindowShouldClose((*itWindow)->m_window, true);
-            glfwDestroyWindow((*itWindow)->m_window);
-            delete (*itWindow);
-            (*itWindow) = NULL;
+            auto itWindow = m_vWindows.begin();
+            while (itWindow != m_vWindows.end() && *itWindow != NULL)
+            {
+                (*itWindow)->Close();
+                SafeDelete(&*itWindow);
+            }
         }
         this->ResetProperty();
     }
@@ -256,15 +290,20 @@ private:
 
     void SetFunctionActive(Window* window)
     {
-        glfwSetKeyCallback(window->m_window, KeyboardFunc);
-        glfwSetMouseButtonCallback(window->m_window, MouseFunc);
+        if (window)
+        {
+            glfwSetKeyCallback(window->m_window, KeyboardFunc);
+            glfwSetMouseButtonCallback(window->m_window, MouseFunc);
+            glfwSetWindowFocusCallback(window->m_window, window_focus_callback);
+            glfwSetCursorEnterCallback(window->m_window, cursor_enter_callback);
+        }
     }
 public:
 
     ~XWindowManager()
     {
         cout << "[Destroy XWindwoManager]" << endl;
-        destroyWindowManager();
+        DestroyWindowManager();
     }
 
     //============================================================
@@ -272,8 +311,7 @@ public:
     //============================================================
     Window* SetContextCurrent(int iWindowID)
     {
-        ASSERT(iWindowID >= 0);
-        if (iWindowID < 0) return NULL;
+        ASSERT((iWindowID >= 0 && iWindowID < WINDOW_MAX_SIZE));
         if (iWindowID < 0 || !m_vWindows[iWindowID] ||
             !m_vWindows[iWindowID]->m_window) return NULL;
 
@@ -282,70 +320,59 @@ public:
         return m_pWinContextCurrent;
     }
 
-    Window* SetContextCurrent(Window* ptrActiveWindow)
-    {
-        ASSERT(ptrActiveWindow);
-        if (!ptrActiveWindow) return NULL;
-        auto itWindow = m_vWindows.begin();
-        while (itWindow != m_vWindows.end())
-        {
-            if ((*itWindow) == ptrActiveWindow)
-            {
-                m_pWinContextCurrent = (*itWindow);
-                if (m_pWinContextCurrent != NULL)
-                {
-                    glfwMakeContextCurrent(m_pWinContextCurrent->m_window);
-                }
-                return (*itWindow);
-            }
-            ++itWindow;
-        }
-        return NULL;
-    }
-
     void SetActiveWindow(Window* ptrActiveWindow)
     {
-        Window* window = this->SetContextCurrent(ptrActiveWindow);
-        ASSERT(window);
-        if (window != NULL)
+        ASSERT(ptrActiveWindow);
+        int iWindowID = -1;
+        if (ptrActiveWindow) iWindowID = ptrActiveWindow->GetID();
+        Window* window = this->SetContextCurrent(iWindowID);
+        if (window)
         {
-            m_pWinActive = window;
-            SetFunctionActive(window);
+            window->Focus();
         }
+        ASSERT(window);
+        m_pWinActive = window;
+        SetFunctionActive(window);
     }
 
     void SetActiveWindow(int iWindowID)
     {
+        ASSERT((iWindowID >= 0 && iWindowID < WINDOW_MAX_SIZE));
         Window* window = this->SetContextCurrent(iWindowID);
-        ASSERT(window);
-        if (window != NULL)
+        if (window)
         {
-            m_pWinActive = window;
-            SetFunctionActive(window);
+            window->Focus();
         }
+        ASSERT(window);
+        m_pWinActive = window;
+        SetFunctionActive(window);
     }
+
     //============================================================
     // Create new window and add this to windows manager 
     //============================================================
-    Window* CreateWindow(WindowSetting setting)
+    Window* CreateWindow(WindowSetting setting, int iLay = -1)
     {
         Window* ptrNewWindow = new Window(setting);
         ASSERT(ptrNewWindow != NULL);
         if (ptrNewWindow == NULL || !ptrNewWindow->m_bCreateSuccess)
         {
-            if (ptrNewWindow != NULL) delete ptrNewWindow;
+            if (ptrNewWindow != NULL) SafeDelete(&ptrNewWindow);
             return NULL;
         }
-        bool bAddSucc = this->AddWindow(ptrNewWindow);
+        ptrNewWindow->m_iLay = iLay;
+        bool bAddSucc = AddWindow(ptrNewWindow);
         if (bAddSucc == false)
         {
-            delete ptrNewWindow;
-            ptrNewWindow = NULL;
+            SafeDelete(&ptrNewWindow);
         }
         return ptrNewWindow;
     }
 
-    Window* CreateWindow(const char* title, unsigned int width, unsigned int height)
+    //============================================================
+    // Create new window and add this to windows manager 
+    //============================================================
+    Window* CreateWindow(const char* title, unsigned int width, unsigned int height, int iLay = -1)
     {
         Window* ptrNewWindow = new Window(title, width, height);
         ASSERT(ptrNewWindow != NULL);
@@ -354,12 +381,13 @@ public:
             if (ptrNewWindow != NULL) delete ptrNewWindow;
             return NULL;
         }
+        ptrNewWindow->m_iLay = iLay;
         bool bAddSucc = this->AddWindow(ptrNewWindow);
         if (bAddSucc == false)
         {
-            delete ptrNewWindow;
-            ptrNewWindow = NULL;
+            SafeDelete(&ptrNewWindow);
         }
+        m_pNewWinCreated = ptrNewWindow;
         return ptrNewWindow;
     }
 
@@ -368,17 +396,8 @@ public:
     //============================================================
     bool AddWindow(Window* window)
     {
+        ASSERT(window);
         if (window == NULL) return false;
-        if (m_uiMaxWindow == 0)
-        {
-            window->m_iID = 0;
-            window->m_iLay = 1;
-            m_vWindows[0] = window;
-            m_uiMaxWindow++;
-            SetActiveWindow(window);
-            return true;
-        }
-
         if (m_uiMaxWindow < WINDOW_MAX_SIZE)
         {
             int idRentain = m_ltRetainsID.empty() ? -1 : m_ltRetainsID.front();
@@ -404,21 +423,18 @@ public:
     //============================================================
     void RemoveWindow(int iWindowID)
     {
-        ASSERT(iWindowID > 0);
-        if (iWindowID < 0) return;
+        ASSERT((iWindowID > 0 && iWindowID >= WINDOW_MAX_SIZE));
+        if (iWindowID < 0 || iWindowID >= WINDOW_MAX_SIZE) return;
         for (auto itWindow = m_vWindows.begin(); itWindow != m_vWindows.end(); ++itWindow)
         {
             if (!(*itWindow)) continue;
             if ((*itWindow)->m_iID == iWindowID)
             {
                 RemoveAllChildren(*itWindow);
+                GetParentWindow(*itWindow)->RemoveChildrenID((*itWindow)->m_iID);
                 m_ltRetainsID.push_back((*itWindow)->m_iID);
-                showRetain();
-                glfwSetWindowShouldClose((*itWindow)->m_window, true);
-                glfwDestroyWindow((*itWindow)->m_window);
-                delete (*itWindow);
-                *itWindow = NULL;
-                showManager();
+                (*itWindow)->Close();
+                SafeDelete(&*itWindow);
             }
         }
     }
@@ -436,30 +452,22 @@ public:
             if ((*itWindow) == ptrWindow)
             {
                 RemoveAllChildren(*itWindow);
-                this->GetParentWindow(ptrWindow)->RemoveChildrenID((*itWindow)->m_iID);
+                Window* ptrParentWin = GetParentWindow(ptrWindow);
+                if (ptrParentWin) ptrParentWin->RemoveChildrenID((*itWindow)->m_iID);
                 m_ltRetainsID.push_back((*itWindow)->m_iID);
-                showRetain();
-                glfwSetWindowShouldClose((*itWindow)->m_window, true);
-                glfwDestroyWindow((*itWindow)->m_window);
-                delete (*itWindow);
-                *itWindow = NULL;
-                showManager();
+                (*itWindow)->Close();
+                SafeDelete(&*itWindow);
             }
         }
-    }
-
-    void DistroyWindow()
-    {
-
     }
 
     //============================================================
     // Remove the entire window as a child of the window 
     //============================================================
-    bool RemoveAllChildren(Window* ptrWindow)
+    void RemoveAllChildren(Window* ptrWindow)
     {
         ASSERT(ptrWindow);
-        if (!ptrWindow) return true;
+        if (!ptrWindow) return;
 
         auto itChildID = ptrWindow->m_listChildren.begin();
         while (itChildID != ptrWindow->m_listChildren.end())
@@ -474,17 +482,70 @@ public:
                     (*itWindow)->m_iLay >= 0)
                 {
                     RemoveAllChildren((*itWindow));
-                    this->GetParentWindow(ptrWindow)->RemoveChildrenID((*itWindow)->m_iID);
+                    Window* ptrParentWin = GetParentWindow(ptrWindow);
+                    if (ptrParentWin) ptrParentWin->RemoveChildrenID((*itWindow)->m_iID);
                     m_ltRetainsID.push_back((*itWindow)->m_iID);
-                    
-                    glfwSetWindowShouldClose((*itWindow)->m_window, true);
-                    glfwDestroyWindow((*itWindow)->m_window);
-                    (*itWindow)->RemoveData();
-                    delete (*itWindow);
-                    (*itWindow) = NULL;
+                    (*itWindow)->Close();
+                    SafeDelete(&*itWindow);
                 }
             }
             itChildID++;
+        }
+    }
+
+    void SortVisible()
+    {
+        ASSERT(m_pWinRoot);
+        if (!m_pWinRoot) return;
+        queue<Window*> queSortWin;
+        queue<float > shadown;
+        this->HideAll();
+        queSortWin.push(m_pWinRoot);
+        while (!queSortWin.empty() && queSortWin.size() < m_uiMaxWindow)
+        {
+            Window* nextWin = queSortWin.front();
+            for (auto idChild : nextWin->m_listChildren)
+            {
+                Window* childWin = GetWindow(idChild);
+                if (childWin)
+                {
+                    shadown.push(0);
+                    queSortWin.push(childWin);
+                }
+            }
+            nextWin->Focus();
+            nextWin->Show();
+            queSortWin.pop();
+            
+        }
+    }
+
+    Window* GetWindow(int iWindowID)
+    {
+        ASSERT((iWindowID >= 0 && iWindowID < WINDOW_MAX_SIZE));
+        if (iWindowID < 0 && iWindowID >= WINDOW_MAX_SIZE) return NULL;
+
+        return m_vWindows[iWindowID];
+    }
+
+    void HideAll()
+    {
+        for (auto window : m_vWindows)
+        {
+            if (window)
+            {
+                window->Hide();
+            }
+        }
+    }
+    void ShowAll()
+    {
+        for (auto window : m_vWindows)
+        {
+            if (window)
+            {
+                window->Show();
+            }
         }
     }
 
@@ -505,6 +566,10 @@ public:
         }
         return NULL;
     }
+    void SetIsRootWindow(Window* ptr)
+    {
+        m_pWinRoot = ptr;
+    }
 
     Window* GetWindowActive()
     {
@@ -520,7 +585,8 @@ public:
         cout << "Show >" << endl;
         for (auto i : m_vWindows)
         {
-            if (i != NULL) {
+            if (i != NULL)
+            {
                 cout << i->m_iID;
                 cout << "( ";
                 for (auto const ii : i->m_listChildren)
@@ -560,7 +626,8 @@ private:
     int                     m_bCloseAllWindow;                        // 1: Cửa sổ đóng hết  0:Vẫn còn cửa sổ hiện hành
 public:
 
-    static int              m_bCreateNewWin;
+    static bool             m_bCreateNewWin;
+    static bool             m_bSortWin;
     static WindowSetting    m_wsNewSetting;
 public:
     WindowManager() : XWindowManager()
@@ -583,20 +650,31 @@ public:
 
                 if (m_bCreateNewWin == true)
                 {
+                    m_wsNewSetting.m_strTitle = NumberToPChar(m_pWinActive->GetID() + 1);
                     Window* ptrNewWin = CreateWindow(m_wsNewSetting);
-                    m_pWinActive->AddChildren(ptrNewWin);
-                    showManager();
-                    SetActiveWindow(ptrNewWin);
+                    if (ptrNewWin)
+                    {
+                        m_pWinActive->AddChildren(ptrNewWin);
+                        SetActiveWindow(ptrNewWin);
+                        glfwWaitEvents();
+                    }
                     this->m_bCreateNewWin = false;
                 }
-                m_pWinActive->SwapBuffers();
+                if (m_bSortWin)
+                {
+                    SortVisible();
+                    m_pWinActive->Focus();
+                    this->m_bSortWin = false;
+                }
+                m_pWinActive->Draw();
                 glfwPollEvents();
             }
             Window* wParentWindow = this->GetParentWindow(m_pWinActive);
             RemoveWindow(m_pWinActive);
-            if (wParentWindow != NULL)
+            if (wParentWindow)
             {
                 SetActiveWindow(wParentWindow->GetID());
+                m_pWinActive->Show();
             }
             else
             {
@@ -605,7 +683,6 @@ public:
         }
     }
 };
-
 
 
 #endif // !WINDOW_H
